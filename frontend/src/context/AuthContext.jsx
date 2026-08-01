@@ -1,6 +1,5 @@
-import { createContext, useEffect, useMemo, useState } from 'react'
-
-export const AuthContext = createContext(null)
+import { useEffect, useMemo, useState } from 'react'
+import { AuthContext } from './auth-state'
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -14,7 +13,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = useMemo(() => ({
     user,
-    signUp: (details) => setUser({ name: details.name || 'Kribo member', role: details.role }),
+    signUp: (details) => setUser({ ...details, name: details.name || 'Kribo member' }),
     logout: () => setUser(null),
   }), [user])
 

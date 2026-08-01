@@ -27,8 +27,8 @@ const Home = () => (
           <h1>Sidha Deal.<br /><em>Sahi Daam.</em></h1>
           <p className="hero-text">List your harvest, let verified brokers place their best <strong>boli</strong>, and choose the price yourself. Zero hidden margins.</p>
           <div className="hero-actions">
-            <a className="button" id="farmer" href="#login/farmer">Join as Farmer <span>→</span></a>
-            <a className="button button-outline" id="broker" href="#login/broker">Join as Broker</a>
+            <a className="button" id="farmer" href="#signup/farmer">Join as Farmer <span>→</span></a>
+            <a className="button button-outline" id="broker" href="#signup/broker">Join as Broker</a>
           </div>
           <dl className="stats">
             <div><dt>Direct</dt><dd>farmer-to-buyer deals</dd></div>
@@ -54,7 +54,7 @@ const Home = () => (
 
       <section className="price-section" id="market-price"><div><p className="kicker">MARKET PRICE</p><h2>Make every harvest count.</h2><p>Check market prices, compare bids, and make a decision with the numbers in front of you.</p></div><a className="button button-light" href="#market-price">Explore market prices →</a></section>
 
-      <section className="cta-section" id="login"><p className="kicker">READY WHEN YOU ARE</p><h2>Your harvest deserves a fair price.</h2><p>Join Kribo Nepal to list your produce or find the crops your business needs.</p><div className="hero-actions"><a className="button button-light" href="#login/farmer">Create farmer account</a><a className="button button-ghost" href="#login/broker">Create broker account</a></div></section>
+      <section className="cta-section" id="login"><p className="kicker">READY WHEN YOU ARE</p><h2>Your harvest deserves a fair price.</h2><p>Join Kribo Nepal to list your produce or find the crops your business needs.</p><div className="hero-actions"><a className="button button-light" href="#signup/farmer">Create farmer account</a><a className="button button-ghost" href="#signup/broker">Create broker account</a></div></section>
     </main>
     <Footer />
   </div>
