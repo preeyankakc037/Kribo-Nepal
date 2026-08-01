@@ -68,4 +68,8 @@ export const authApi = {
     request('/api/auth/login', { method: 'POST', json: body }),
 }
 
+export const directoryApi = {
+  listPeople: (role) => request(`/api/users${role ? `?role=${encodeURIComponent(role)}` : ''}`),
+}
+
 export default request

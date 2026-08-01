@@ -1,14 +1,27 @@
 import { useState } from 'react'
-import { AreaChart, Area, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import Navbar from '../../components/common/Navbar'
 
+// ── Monthly price trend data for crops ───────────────────────────────────────
 const months = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
 
 const trendByCrop = {
-  Tomato: [48, 50, 49, 54, 58, 62],
-  Cauliflower: [40, 38, 41, 43, 45, 44],
-  Potato: [28, 29, 30, 31, 33, 35],
-  Onion: [60, 62, 65, 68, 71, 74],
+  Tomato: [48, 51, 49, 54, 57, 62],
+  Cauliflower: [42, 40, 41, 45, 47, 44],
+  Potato: [28, 29, 31, 32, 33, 35],
+  Onion: [62, 65, 64, 69, 72, 74],
 }
 
 const trendData = months.map((month, i) => ({
@@ -19,189 +32,204 @@ const trendData = months.map((month, i) => ({
   Onion: trendByCrop.Onion[i],
 }))
 
+// ── District-wise rates data for bar chart ───────────────────────────────────
 const districtData = [
-  { district: 'Kathmandu', rate: 68 },
-  { district: 'Chitwan', rate: 58 },
-  { district: 'Pokhara', rate: 65 },
-  { district: 'Dhading', rate: 52 },
-  { district: 'Jhapa', rate: 48 },
-  { district: 'Banke', rate: 55 },
+  { district: 'Kathmandu', rate: 64 },
+  { district: 'Chitwan', rate: 52 },
+  { district: 'Pokhara', rate: 58 },
+  { district: 'Dhading', rate: 47 },
+  { district: 'Jhapa', rate: 44 },
+  { district: 'Banke', rate: 49 },
 ]
 
-const barColors = ['#81c784', '#4db6ac', '#ffb74d', '#b39ddb', '#f48fb1', '#aed581']
-
+// ── Stat cards data ──────────────────────────────────────────────────────────
 const statCards = [
-  { crop: 'Tomato (Big)', icon: '📈', price: 62, change: 5.1, trend: 'up' },
-  { crop: 'Cauliflower', icon: '📉', price: 44, change: -2.2, trend: 'down' },
-  { crop: 'Onion (Dry)', icon: '📈', price: 74, change: 5.7, trend: 'up' },
-  { crop: 'Potato (Red)', icon: '📈', price: 35, change: 6.1, trend: 'up' },
+  {
+    crop: 'Tomato (Big)',
+    price: 'Rs 62/kg',
+    change: '+5.1% vs yesterday',
+    isUp: true,
+  },
+  {
+    crop: 'Cauliflower',
+    price: 'Rs 44/kg',
+    change: '-2.2% vs yesterday',
+    isUp: false,
+  },
+  {
+    crop: 'Onion (Dry)',
+    price: 'Rs 74/kg',
+    change: '+5.7% vs yesterday',
+    isUp: true,
+  },
+  {
+    crop: 'Potato (Red)',
+    price: 'Rs 35/kg',
+    change: '+6.1% vs yesterday',
+    isUp: true,
+  },
 ]
 
+// ── Today's rates table data ─────────────────────────────────────────────────
 const todayRates = [
-  { crop: 'Tomato (Big)', today: 62, change: 5.1, high: 70, low: 55 },
-  { crop: 'Cauliflower', today: 44, change: -2.2, high: 50, low: 38 },
-  { crop: 'Potato (Red)', today: 35, change: 6.1, high: 38, low: 30 },
-  { crop: 'Onion (Dry)', today: 74, change: 5.7, high: 80, low: 58 },
-  { crop: 'Cabbage', today: 28, change: -6.7, high: 34, low: 25 },
-  { crop: 'Green Chilli', today: 95, change: 8.0, high: 110, low: 75 },
-  { crop: 'Carrot', today: 56, change: 0, high: 62, low: 48 },
-  { crop: 'Ginger', today: 180, change: 4.7, high: 195, low: 150 },
+  { crop: 'Tomato (Big)', today: 62, change: '+5.1%', type: 'up', high: 70, low: 55 },
+  { crop: 'Cauliflower', today: 44, change: '-2.2%', type: 'down', high: 50, low: 38 },
+  { crop: 'Potato (Red)', today: 35, change: '+6.1%', type: 'up', high: 38, low: 30 },
+  { crop: 'Onion (Dry)', today: 74, change: '+5.7%', type: 'up', high: 80, low: 58 },
+  { crop: 'Cabbage', today: 28, change: '-6.7%', type: 'down', high: 34, low: 25 },
+  { crop: 'Green Chili', today: 95, change: '+8.0%', type: 'up', high: 110, low: 75 },
+  { crop: 'Carrot', today: 56, change: '0%', type: 'neutral', high: 62, low: 48 },
+  { crop: 'Ginger', today: 180, change: '+4.7%', type: 'up', high: 195, low: 150 },
 ]
-
-const cropColors = {
-  Tomato: '#2f8f4e',
-  Cauliflower: '#1f8a8a',
-  Potato: '#e0a428',
-  Onion: '#8a5cf5',
-}
 
 const MarketPrice = () => {
-  const [activeCrop, setActiveCrop] = useState('Potato')
-  const [query, setQuery] = useState('')
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [dropdownQuery, setDropdownQuery] = useState('')
-  const cropsList = ['Tomato', 'Cauliflower', 'Potato', 'Onion']
-  const filteredDropdownCrops = cropsList.filter(c => c.toLowerCase().includes(dropdownQuery.toLowerCase()))
+  const [selectedCrop, setSelectedCrop] = useState('Tomato')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const filteredRates = todayRates.filter((row) => row.crop.toLowerCase().includes(query.toLowerCase()))
+  const cropList = ['Tomato', 'Cauliflower', 'Potato', 'Onion']
+
+  const filteredRates = todayRates.filter((r) =>
+    r.crop.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <>
       <Navbar />
-      <main className="mp-page">
-        {/* Title */}
-        <div className="mp-header">
-          <h1>Market Price</h1>
-          <p>Compare local market prices and recent broker offers before you trade.</p>
+      <main className="mp-page-wrapper">
+        {/* Page Header */}
+        <div className="mp-header-block">
+          <h1 className="mp-title">Market Price</h1>
+          <p className="mp-subtitle">
+            Compare local market prices and recent broker offers before you trade.
+          </p>
         </div>
 
-        {/* Stat cards */}
-        <section className="mp-stats">
+        {/* Top 4 Stat Cards */}
+        <div className="mp-stats-grid">
           {statCards.map((card) => (
-            <div key={card.crop} className="mp-stat-card">
-              <div className={`mp-stat-icon ${card.trend}`}>
-                {card.icon}
+            <div className="mp-stat-card" key={card.crop}>
+              <div className={`mp-stat-badge ${card.isUp ? 'up' : 'down'}`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {card.isUp ? (
+                    <path d="M23 6l-9.5 9.5-5-5L1 18m22-12h-6m6 0v6" />
+                  ) : (
+                    <path d="M23 18l-9.5-9.5-5 5L1 6m22 12h-6m6 0v-6" />
+                  )}
+                </svg>
               </div>
-              <div className="mp-stat-info">
-                <p>{card.crop}</p>
-                <p>Rs {card.price}/kg</p>
-                <p className={card.trend}>
-                  {card.change > 0 ? '+' : ''}
-                  {card.change}% vs yesterday
-                </p>
+              <div className="mp-stat-content">
+                <span className="mp-stat-crop">{card.crop}</span>
+                <span className="mp-stat-price">{card.price}</span>
+                <span className={`mp-stat-sub ${card.isUp ? 'up' : 'down'}`}>
+                  {card.change}
+                </span>
               </div>
             </div>
           ))}
-        </section>
+        </div>
 
-        {/* Trend chart */}
-        <section className="mp-section">
-          <div className="mp-section-header">
+        {/* 6-Month Price Trend Card */}
+        <div className="mp-card mp-trend-card">
+          <div className="mp-card-header">
             <h2>6-month price trend (Rs/kg)</h2>
-            <div className="mp-dropdown-container">
-              <input
-                className="mp-dropdown-input"
-                value={isDropdownOpen ? dropdownQuery : activeCrop}
-                onChange={(e) => { setDropdownQuery(e.target.value); setIsDropdownOpen(true); }}
-                onFocus={() => { setIsDropdownOpen(true); setDropdownQuery(''); }}
-                onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                placeholder="Search crop..."
-              />
-              <span className="mp-dropdown-arrow">▼</span>
-              {isDropdownOpen && (
-                <ul className="mp-dropdown-list">
-                  {filteredDropdownCrops.map(crop => (
-                    <li
-                      key={crop}
-                      onMouseDown={() => { setActiveCrop(crop); setIsDropdownOpen(false); setDropdownQuery(''); }}
-                      className={activeCrop === crop ? 'active' : ''}
-                    >
-                      {crop}
-                    </li>
-                  ))}
-                  {filteredDropdownCrops.length === 0 && <li className="empty">No crops found</li>}
-                </ul>
-              )}
+            <div className="mp-crop-tabs">
+              {cropList.map((crop) => (
+                <button
+                  key={crop}
+                  className={`mp-tab-btn ${selectedCrop === crop ? 'active' : ''}`}
+                  onClick={() => setSelectedCrop(crop)}
+                >
+                  {crop}
+                </button>
+              ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={trendData}>
-              <defs>
-                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={cropColors[activeCrop]} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={cropColors[activeCrop]} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-              <Tooltip />
-              <Area
-                type="monotone"
-                dataKey={activeCrop}
-                stroke={cropColors[activeCrop]}
-                strokeWidth={2}
-                fill="url(#trendFill)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </section>
 
-        {/* Two charts row */}
-        <section className="mp-grid-2">
-          <div className="mp-section" style={{ marginBottom: 0 }}>
-            <div className="mp-section-header">
+          <div className="mp-chart-container">
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#43a047" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#43a047" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f0" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                <YAxis domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }}
+                  formatter={(val) => [`Rs ${val}/kg`, selectedCrop]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey={selectedCrop}
+                  stroke="#2e7d32"
+                  strokeWidth={2.5}
+                  fill="url(#greenGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Grid of Two Charts: All Crops Compared & District-wise Rate */}
+        <div className="mp-two-column-grid">
+          {/* Left: All crops compared */}
+          <div className="mp-card">
+            <div className="mp-card-header">
               <h2>All crops compared</h2>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="Tomato" stroke={cropColors.Tomato} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Cauliflower" stroke={cropColors.Cauliflower} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Potato" stroke={cropColors.Potato} strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="mp-chart-container">
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                  <YAxis domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="Tomato" stroke="#00897b" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Cauliflower" stroke="#2e7d32" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Potato" stroke="#fb8c00" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="mp-section" style={{ marginBottom: 0 }}>
-            <div className="mp-section-header">
+          {/* Right: District-wise tomato rate */}
+          <div className="mp-card">
+            <div className="mp-card-header">
               <h2>District-wise tomato rate (Rs/kg)</h2>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={districtData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="district" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="rate" radius={[6, 6, 0, 0]}>
-                  {districtData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={barColors[index % barColors.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="mp-chart-container">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={districtData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f0" />
+                  <XAxis dataKey="district" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                  <YAxis domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} formatter={(val) => [`Rs ${val}/kg`, 'Rate']} />
+                  <Bar dataKey="rate" fill="#4caf50" radius={[4, 4, 0, 0]} barSize={36} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </section>
+        </div>
 
-        {/* Table */}
-        <section className="mp-section">
-          <div className="mp-section-header">
+        {/* Today's Rates Table Card */}
+        <div className="mp-card mp-table-card">
+          <div className="mp-card-header">
             <h2>Today's rates</h2>
-            <label className="mp-search">
-              <span>⌕</span>
+            <div className="mp-search-box">
               <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                type="text"
                 placeholder="Search crop..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </label>
+            </div>
           </div>
 
-          <div className="mp-table-wrapper">
-            <table className="mp-table">
+          <div className="mp-table-responsive">
+            <table className="mp-rates-table">
               <thead>
                 <tr>
                   <th>Crop</th>
@@ -214,35 +242,33 @@ const MarketPrice = () => {
               <tbody>
                 {filteredRates.map((row) => (
                   <tr key={row.crop}>
-                    <td style={{ fontWeight: 600 }}>{row.crop}</td>
+                    <td className="mp-crop-name">{row.crop}</td>
                     <td>
-                      <span className="mp-price-badge">
-                        Rs {row.today}
+                      <span className="mp-price-tag">Rs {row.today}</span>
+                    </td>
+                    <td>
+                      <span className={`mp-change-tag ${row.type}`}>
+                        {row.type === 'up' && '↗ '}
+                        {row.type === 'down' && '↘ '}
+                        {row.type === 'neutral' && '— '}
+                        {row.change}
                       </span>
                     </td>
-                    <td
-                      className={`mp-change ${
-                        row.change > 0 ? 'up' : row.change < 0 ? 'down' : 'neutral'
-                      }`}
-                    >
-                      {row.change > 0 ? '↗ +' : row.change < 0 ? '↘ ' : '— '}
-                      {row.change !== 0 ? `${row.change}%` : '0%'}
-                    </td>
-                    <td style={{ color: 'var(--muted)' }}>Rs {row.high}</td>
-                    <td style={{ color: 'var(--muted)' }}>Rs {row.low}</td>
+                    <td className="mp-high-low">Rs {row.high}</td>
+                    <td className="mp-high-low">Rs {row.low}</td>
                   </tr>
                 ))}
                 {filteredRates.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)' }}>
-                      No crops match your search.
+                    <td colSpan={5} className="mp-no-results">
+                      No crop found matching "{searchQuery}".
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       </main>
     </>
   )

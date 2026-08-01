@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app import crud, schemas, models
 from app.core.security import create_access_token, hash_password, verify_password
@@ -49,6 +49,10 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
         location=payload.location,
         role=models.UserRole(payload.role),
         hashed_password=hash_password(payload.password),
+        profile_photo=payload.profile_photo,
+        # For this frontend prototype, submitting the requested document grants
+        # the visible trust badge. A production version should have staff review.
+        is_verified=payload.verification_submitted,
     )
     db.add(user)
     try:
@@ -92,6 +96,9 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
         email=user.email,
         role=user.role.value,
         is_verified=user.is_verified,
+        address=user.address,
+        location=user.location,
+        profile_photo=user.profile_photo,
     )
     return schemas.TokenResponse(access_token=token, user=user_out)
 
@@ -117,5 +124,35 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
         email=user.email,
         role=user.role.value,
         is_verified=user.is_verified,
+        address=user.address,
+        location=user.location,
+        profile_photo=user.profile_photo,
     )
     return schemas.TokenResponse(access_token=token, user=user_out)
+
+
+@router.get("/api/users", response_model=list[schemas.DirectoryUserOut])
+def get_people(role: str | None = None, db: Session = Depends(get_db)):
+    """Public marketplace directory; deliberately excludes mobile, email and address."""
+    query = db.query(models.User).options(
+        joinedload(models.User.farmer_profile),
+        joinedload(models.User.broker_profile),
+    )
+    if role in ("farmer", "broker"):
+        query = query.filter(models.User.role == models.UserRole(role))
+
+    people = []
+    for user in query.order_by(models.User.created_at.desc()).all():
+        profile = user.farmer_profile if user.role == models.UserRole.farmer else user.broker_profile
+        people.append(schemas.DirectoryUserOut(
+            id=user.id,
+            full_name=user.full_name,
+            role=user.role.value,
+            location=user.location,
+            profile_photo=user.profile_photo,
+            is_verified=user.is_verified,
+            crops=profile.crops or [] if profile else [],
+            scale=(profile.harvest_scale if user.role == models.UserRole.farmer else profile.trading_scale) if profile else None,
+            transport=profile.transport if user.role == models.UserRole.broker and profile else None,
+        ))
+    return people

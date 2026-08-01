@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, Enum, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, Enum, ForeignKey, JSON, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -46,6 +46,7 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False)
     hashed_password = Column(String(500), nullable=False)
     is_verified = Column(Boolean, default=False)
+    profile_photo = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     farmer_profile = relationship("FarmerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")

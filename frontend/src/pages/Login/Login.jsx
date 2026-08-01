@@ -74,6 +74,8 @@ const SignupForm = ({ initialRole }) => {
 
   /* Step 3 — Verification */
   const [paymentAccount, setPaymentAccount] = useState('')
+  const [profilePhoto, setProfilePhoto] = useState('')
+  const [verificationSubmitted, setVerificationSubmitted] = useState(false)
 
   /* UI state */
   const [loading, setLoading] = useState(false)
@@ -106,6 +108,13 @@ const SignupForm = ({ initialRole }) => {
   }
 
   /* ── Submit ── */
+  const readProfilePhoto = (file) => {
+    if (!file) return setProfilePhoto('')
+    const reader = new FileReader()
+    reader.onload = () => setProfilePhoto(reader.result)
+    reader.readAsDataURL(file)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -120,6 +129,8 @@ const SignupForm = ({ initialRole }) => {
       email: email || undefined,
       location,
       role,
+      profile_photo: profilePhoto || undefined,
+      verification_submitted: verificationSubmitted,
       farmer_profile:
         role === 'farmer'
           ? {
@@ -373,10 +384,10 @@ const SignupForm = ({ initialRole }) => {
                   {role === 'farmer' ? (
                     <>
                       <Field label="Citizenship card photos" optional>
-                        <input type="file" accept="image/*" multiple />
+                        <input type="file" accept="image/*" multiple onChange={(e) => setVerificationSubmitted(e.target.files.length > 0)} />
                       </Field>
                       <Field label="Your photo" optional>
-                        <input type="file" accept="image/*" />
+                        <input type="file" accept="image/*" onChange={(e) => readProfilePhoto(e.target.files[0])} />
                       </Field>
                       <Field label="Mobile wallet / bank account" optional>
                         <input
@@ -389,13 +400,13 @@ const SignupForm = ({ initialRole }) => {
                   ) : (
                     <>
                       <Field label="PAN / business registration document" optional>
-                        <input type="file" accept="image/*,.pdf" />
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setVerificationSubmitted(e.target.files.length > 0)} />
                       </Field>
                       <Field label="Citizenship card photos" optional>
-                        <input type="file" accept="image/*" multiple />
+                        <input type="file" accept="image/*" multiple onChange={(e) => setVerificationSubmitted(e.target.files.length > 0)} />
                       </Field>
                       <Field label="User / proprietor photo" optional>
-                        <input type="file" accept="image/*" />
+                        <input type="file" accept="image/*" onChange={(e) => readProfilePhoto(e.target.files[0])} />
                       </Field>
                     </>
                   )}

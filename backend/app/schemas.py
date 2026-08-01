@@ -58,6 +58,8 @@ class RegisterRequest(BaseModel):
     role: str
     farmer_profile: Optional[FarmerProfileIn] = None
     broker_profile: Optional[BrokerProfileIn] = None
+    profile_photo: Optional[str] = None
+    verification_submitted: bool = False
 
     @field_validator("role")
     @classmethod
@@ -79,6 +81,9 @@ class UserOut(BaseModel):
     email: Optional[str] = None
     role: str
     is_verified: bool
+    address: Optional[str] = None
+    location: Optional[str] = None
+    profile_photo: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -88,3 +93,18 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class DirectoryUserOut(BaseModel):
+    id: int
+    full_name: str
+    role: str
+    location: Optional[str] = None
+    profile_photo: Optional[str] = None
+    is_verified: bool
+    crops: List[str] = []
+    scale: Optional[str] = None
+    transport: Optional[str] = None
+
+    class Config:
+        from_attributes = True

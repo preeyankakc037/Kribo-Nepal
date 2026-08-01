@@ -5,6 +5,7 @@ import SignupForm from './pages/Login/Login'
 import SignIn from './pages/Login/SignIn'
 import Marketplace from './pages/Marketplace/Marketplace'
 import CreatePost from './pages/Marketplace/CreatePost'
+import MarketPrice from './pages/MarketPrice/MarketPrice'
 import Workspace from './pages/Workspace/Workspace'
 import './App.css'
 
@@ -24,6 +25,7 @@ const AppContent = () => {
   if (route === 'home') return <Home />
   if (route === 'marketplace') return <Marketplace />
   if (route === 'create-post') return <CreatePost />
+  if (route === 'market-price') return <MarketPrice />
 
   return <Workspace route={route} />
 }
