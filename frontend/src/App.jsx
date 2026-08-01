@@ -4,7 +4,12 @@ import Home from './pages/Home/Home'
 import SignupForm from './pages/Login/Login'
 import SignIn from './pages/Login/SignIn'
 import Marketplace from './pages/Marketplace/Marketplace'
+<<<<<<< HEAD
+import MarketPrice from './pages/MarketPrice/MarketPrice'
+
+=======
 import CreatePost from './pages/Marketplace/CreatePost'
+>>>>>>> origin/main
 import Workspace from './pages/Workspace/Workspace'
 import './App.css'
 
@@ -38,9 +43,13 @@ const AppContent = () => {
   // ── Page routes ──────────────────────────────────────────────────────────
   if (route === 'home') return <Home />
   if (route === 'marketplace') return <Marketplace />
+<<<<<<< HEAD
+  if (route === 'market-price') return <MarketPrice />
+=======
   if (route === 'create-post') return <CreatePost />
 
   // dashboard, profile, kribo-connect, market-price, etc.
+>>>>>>> origin/main
   return <Workspace route={route} />
 }
 

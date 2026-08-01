@@ -57,3 +57,56 @@
 .nav-login-btn:hover { background: #176f37 !important; transform: translateY(-1px); }
 
 @media (max-width: 760px) { .site-header { height: 61px; padding: 0 17px; gap: 14px; }.brand { font-size: 16px; }.brand-mark { width: 30px; height: 30px; }.main-nav { display: none; }.nav-actions { margin-left: auto; gap: 12px; }.login-link { display: none; }.button-small { min-height: 35px; padding: 0 12px; font-size: 12px; }.hero-section { grid-template-columns: 1fr; gap: 45px; padding-top: 57px; padding-bottom: 68px; }.hero-copy h1 { font-size: 54px; }.hero-text { font-size: 16px; }.hero-image-wrap { max-width: 530px; }.feature-grid, .steps-grid { grid-template-columns: 1fr; }.benefits-section, .how-section { padding-top: 60px; padding-bottom: 60px; }.price-section { margin: 0 18px 60px; padding: 37px 26px; display: block; }.price-section .button { margin-top: 26px; }.site-footer { flex-direction: column; }.footer-links { justify-content: space-between; }.stats { margin-top: 30px; }.auth-page { padding: 27px 14px; }.auth-panel { grid-template-columns: 1fr; }.auth-intro { padding: 34px 27px; }.auth-intro h1 { font-size: 39px; }.signup-form { padding: 28px 20px; }.stepper span { display: none; }.form-grid, .workspace-cards { grid-template-columns: 1fr; }.workspace { padding: 52px 22px; } }
+
+/* Market Price Page */
+.mp-page { max-width: 1220px; margin: auto; padding: 40px 26px 80px; }
+.mp-header { margin-bottom: 32px; }
+.mp-header h1 { font-size: clamp(32px, 4vw, 42px); font-family: 'Playfair Display', Georgia, serif; color: var(--ink); margin: 0; }
+.mp-header p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+
+.mp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.mp-stat-card { display: flex; align-items: center; gap: 16px; padding: 20px; background: white; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.mp-stat-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; font-size: 18px; }
+.mp-stat-icon.up { background: #e9f4ea; color: var(--green); }
+.mp-stat-icon.down { background: #fce8e8; color: #d93838; }
+.mp-stat-info p:first-child { margin: 0; color: var(--muted); font-size: 14px; }
+.mp-stat-info p:nth-child(2) { margin: 4px 0 0; font-size: 20px; font-weight: 700; color: var(--ink); }
+.mp-stat-info p:last-child { margin: 4px 0 0; font-size: 12px; font-weight: 600; }
+.mp-stat-info .up { color: var(--green); }
+.mp-stat-info .down { color: #d93838; }
+
+.mp-section { background: white; border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.mp-section-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.mp-section h2 { font-size: 18px; font-family: 'DM Sans', sans-serif; font-weight: 700; margin: 0; color: var(--ink); }
+
+.mp-tabs { display: flex; background: #f0f5f0; padding: 4px; border-radius: 8px; }
+.mp-tabs button { padding: 6px 16px; border: none; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+.mp-tabs button.active { background: white; color: var(--ink); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+.mp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+@media (max-width: 900px) { .mp-grid-2 { grid-template-columns: 1fr; } }
+
+.mp-search { display: flex; align-items: center; gap: 8px; background: #fbfdf9; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; width: 100%; max-width: 260px; }
+.mp-search input { border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: var(--ink); }
+.mp-search span { color: #9aa59c; }
+
+.mp-table-wrapper { overflow-x: auto; }
+.mp-table { width: 100%; border-collapse: collapse; text-align: left; }
+.mp-table th { padding: 12px 16px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.mp-table td { padding: 16px; font-size: 14px; color: var(--ink); border-bottom: 1px solid #f0f5f0; }
+.mp-table tr:last-child td { border-bottom: none; }
+.mp-table tr:hover td { background: #fbfdf9; }
+.mp-price-badge { display: inline-block; padding: 4px 10px; background: #f0f5f0; border-radius: 6px; font-weight: 700; font-size: 13px; }
+.mp-change.up { color: var(--green); font-weight: 700; }
+.mp-change.down { color: #d93838; font-weight: 700; }
+.mp-change.neutral { color: var(--muted); font-weight: 700; }
+
+.mp-dropdown-container { position: relative; width: 180px; }
+.mp-dropdown-input { width: 100%; padding: 8px 30px 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; font-size: 14px; font-weight: 600; color: var(--ink); outline: none; cursor: pointer; transition: all 0.2s; box-sizing: border-box; }
+.mp-dropdown-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(35, 137, 71, 0.15); }
+.mp-dropdown-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--muted); pointer-events: none; }
+.mp-dropdown-list { position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; background: white; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 4px; margin: 0; list-style: none; z-index: 10; }
+.mp-dropdown-list li { padding: 8px 12px; font-size: 14px; font-weight: 600; color: var(--ink); border-radius: 6px; cursor: pointer; }
+.mp-dropdown-list li:hover, .mp-dropdown-list li.active { background: #f0f5f0; color: var(--green); }
+.mp-dropdown-list li.empty { color: var(--muted); text-align: center; cursor: default; }
+.mp-dropdown-list li.empty:hover { background: transparent; color: var(--muted); }
