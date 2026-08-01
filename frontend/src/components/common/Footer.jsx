@@ -2,7 +2,7 @@ const Footer = () => (
   <footer className="site-footer">
     <div>
       <a className="brand" href="#home">
-        <span className="brand-mark">✦</span>
+        <span className="brand-mark"><img src="/favicon.svg?v=leaf" alt="Kribo Nepal leaf logo" /></span>
         <span>Kribo Nepal</span>
       </a>
       <p>Transparent agricultural trading for Nepal. Farmers list; buyers make their best boli.</p>

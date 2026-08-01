@@ -16,7 +16,7 @@ const AuthGateway = () => (
       <div className="gateway-card">
         {/* Header */}
         <a className="brand" href="#home">
-          <span className="brand-mark">✦</span>
+          <span className="brand-mark"><img src="/favicon.svg?v=leaf" alt="Kribo Nepal leaf logo" /></span>
           <span>Kribo Nepal</span>
         </a>
 

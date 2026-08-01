@@ -46,6 +46,10 @@ export const AuthProvider = ({ children }) => {
         setUser(userData)
       },
 
+      updateUser: (updates) => {
+        setUser((currentUser) => currentUser ? { ...currentUser, ...updates } : currentUser)
+      },
+
       logout: () => {
         setUser(null)
       },

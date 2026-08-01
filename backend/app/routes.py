@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, schemas, models
@@ -31,7 +32,13 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.mobile == payload.mobile).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A user with this mobile number already exists."
+            detail="An account with this mobile number already exists. Please log in instead."
+        )
+
+    if payload.email and db.query(models.User).filter(models.User.email == payload.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists. Please log in instead."
         )
 
     user = models.User(
@@ -44,7 +51,15 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError:
+        # Covers a race where the same mobile/email is submitted twice at once.
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this mobile number or email already exists. Please log in instead."
+        )
 
     if payload.role == "farmer":
         fp = payload.farmer_profile

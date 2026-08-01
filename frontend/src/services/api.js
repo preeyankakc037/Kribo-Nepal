@@ -26,7 +26,7 @@ async function request(path, { json, ...options } = {}) {
       headers,
       body: json ? JSON.stringify(json) : options.body,
     })
-  } catch (networkErr) {
+  } catch {
     // Try fallback to localhost if 127.0.0.1 failed
     try {
       const fallbackUrl = BASE_URL.includes('127.0.0.1')

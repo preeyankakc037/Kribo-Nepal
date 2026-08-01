@@ -34,7 +34,7 @@ const Navbar = () => {
   return (
     <header className="site-header">
       <a href="#home" className="brand">
-        <span className="brand-mark">✦</span>
+        <span className="brand-mark"><img src="/favicon.svg?v=leaf" alt="Kribo Nepal leaf logo" /></span>
         <span>Kribo Nepal</span>
       </a>
 

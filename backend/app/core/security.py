@@ -1,71 +1,29 @@
-from datetime import datetime, timedelta
-from typing import Optional
+import os
+from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
-
-from app.core.config import settings
-from app.core.database import get_db
-
-# ── Password hashing ─────────────────────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# ── Bearer token extractor ───────────────────────────────────────────────────
-bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+SECRET_KEY = os.getenv("SECRET_KEY", "change-this-in-production")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+
+# passlib 1.7.x is incompatible with bcrypt 5.x (it expects bcrypt.__about__).
+# PBKDF2-SHA256 is a secure, built-in Passlib scheme and avoids bcrypt's 72-byte
+# password limit. Keep bcrypt second so any legacy bcrypt hashes can still be read.
+password_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+def hash_password(password: str) -> str:
+    return password_context.hash(password)
 
 
-# ── JWT helpers ───────────────────────────────────────────────────────────────
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (
-        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return password_context.verify(plain_password, hashed_password)
 
 
-def decode_token(token: str) -> dict:
-    try:
-        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-# ── FastAPI dependency ────────────────────────────────────────────────────────
-def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-):
-    """Extract and validate the JWT; return the User ORM object."""
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-        )
-    payload = decode_token(credentials.credentials)
-    user_id: int = payload.get("sub")
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-
-    # Import here to avoid circular imports
-    from app.models.user import User
-
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+def create_access_token(data: dict) -> str:
+    payload = data.copy()
+    payload["exp"] = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
