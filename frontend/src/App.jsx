@@ -4,12 +4,8 @@ import Home from './pages/Home/Home'
 import SignupForm from './pages/Login/Login'
 import SignIn from './pages/Login/SignIn'
 import Marketplace from './pages/Marketplace/Marketplace'
-<<<<<<< HEAD
 import MarketPrice from './pages/MarketPrice/MarketPrice'
-
-=======
 import CreatePost from './pages/Marketplace/CreatePost'
->>>>>>> origin/main
 import Workspace from './pages/Workspace/Workspace'
 import './App.css'
 
@@ -29,12 +25,12 @@ const AppContent = () => {
   }, [])
 
   // ── Auth routes ──────────────────────────────────────────────────────────
-  // #login       → Sign-in form
+  // #login → Sign-in form
   if (route === 'login') return <SignIn />
 
-  // #signup               → signup form defaulting to farmer
-  // #signup/farmer        → farmer signup
-  // #signup/broker        → broker signup
+  // #signup → signup form defaulting to farmer
+  // #signup/farmer → farmer signup
+  // #signup/broker → broker signup
   if (route === 'signup' || route.startsWith('signup/')) {
     const role = route.split('/')[1] || 'farmer'
     return <SignupForm initialRole={role} />
@@ -43,13 +39,10 @@ const AppContent = () => {
   // ── Page routes ──────────────────────────────────────────────────────────
   if (route === 'home') return <Home />
   if (route === 'marketplace') return <Marketplace />
-<<<<<<< HEAD
   if (route === 'market-price') return <MarketPrice />
-=======
   if (route === 'create-post') return <CreatePost />
 
-  // dashboard, profile, kribo-connect, market-price, etc.
->>>>>>> origin/main
+  // dashboard, profile, kribo-connect, etc.
   return <Workspace route={route} />
 }
 
