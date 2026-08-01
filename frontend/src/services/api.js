@@ -1,16 +1,14 @@
 /**
  * api.js — central HTTP client for Kribo Nepal frontend.
  *
- * All calls go to VITE_API_URL (default: http://localhost:8000).
+ * All calls go to VITE_API_URL (default: http://127.0.0.1:8000).
  * JWT is automatically attached from localStorage when present.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 /**
  * Core fetch wrapper.
- * @param {string} path    — e.g. "/api/auth/login"
- * @param {object} options — standard fetch options + optional `json` body shorthand
  */
 async function request(path, { json, ...options } = {}) {
   const token = localStorage.getItem('kribo_token')
@@ -21,11 +19,28 @@ async function request(path, { json, ...options } = {}) {
     ...(options.headers || {}),
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-    body: json ? JSON.stringify(json) : options.body,
-  })
+  let res
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+      body: json ? JSON.stringify(json) : options.body,
+    })
+  } catch (networkErr) {
+    // Try fallback to localhost if 127.0.0.1 failed
+    try {
+      const fallbackUrl = BASE_URL.includes('127.0.0.1')
+        ? BASE_URL.replace('127.0.0.1', 'localhost')
+        : BASE_URL.replace('localhost', '127.0.0.1')
+      res = await fetch(`${fallbackUrl}${path}`, {
+        ...options,
+        headers,
+        body: json ? JSON.stringify(json) : options.body,
+      })
+    } catch {
+      throw new Error('Could not connect to backend server. Please make sure the backend Python server is running on port 8000.')
+    }
+  }
 
   const data = await res.json().catch(() => ({}))
 
@@ -36,7 +51,7 @@ async function request(path, { json, ...options } = {}) {
         ? detail.map((e) => e.msg).join(', ')
         : typeof detail === 'string'
         ? detail
-        : 'Something went wrong. Please try again.'
+        : 'Failed to complete registration or login. Please check your information.'
     throw new Error(message)
   }
 
@@ -46,17 +61,9 @@ async function request(path, { json, ...options } = {}) {
 // ── Auth endpoints ────────────────────────────────────────────────────────────
 
 export const authApi = {
-  /**
-   * Register a new farmer or broker.
-   * Sends all 3 form steps in one request.
-   */
   register: (body) =>
     request('/api/auth/register', { method: 'POST', json: body }),
 
-  /**
-   * Login with mobile/email + password.
-   * Returns { access_token, token_type, user }.
-   */
   login: (body) =>
     request('/api/auth/login', { method: 'POST', json: body }),
 }
