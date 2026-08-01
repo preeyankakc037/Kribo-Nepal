@@ -1,0 +1,48 @@
+import { useState } from 'react'
+import Navbar from '../../components/common/Navbar'
+import { useAuth } from '../../hooks/useAuth'
+
+const farmerSteps = ['Product', 'Pricing', 'Harvest', 'Details', 'Images', 'Delivery', 'Location', 'Contact']
+const brokerSteps = ['Product need', 'Budget', 'Delivery', 'Location', 'Contact']
+const Field = ({ label, optional, children }) => <label className="form-field"><span>{label} {optional && <i>(optional)</i>}</span>{children || <input />}</label>
+const Select = ({ children }) => <select defaultValue=""><option value="" disabled>Select an option</option>{children}</select>
+
+const FarmerForm = () => {
+  const [step, setStep] = useState(1); const [price, setPrice] = useState('65'); const [priceType, setPriceType] = useState('shown')
+  const next = () => setStep((value) => Math.min(value + 1, farmerSteps.length)); const prev = () => setStep((value) => Math.max(value - 1, 1))
+  const publish = () => { window.location.hash = '#dashboard' }
+  return <PostFrame title="Create a harvest listing" subtitle="Share the details buyers need to make you their best offer." steps={farmerSteps} step={step}>
+    {step === 1 && <section className="post-form-step"><h2>Product information</h2><div className="form-grid"><Field label="Product name *"><input required placeholder="Tomato" /></Field><Field label="Variety"><input placeholder="Hybrid Tomato, Local Tomato..." /></Field><Field label="Category"><Select><option>🥬 Vegetable</option><option>🍎 Fruit</option><option>🌾 Grain</option><option>🌶️ Spice</option><option>🌱 Other</option></Select></Field></div></section>}
+    {step === 2 && <section className="post-form-step"><h2>Quantity & pricing</h2><div className="form-grid"><Field label="Quantity"><input type="number" placeholder="500" /></Field><Field label="Unit"><Select><option>KG</option><option>Ton</option><option>Sack</option><option>Crate</option></Select></Field></div><div className="price-choice"><label><input type="radio" checked={priceType === 'shown'} onChange={() => setPriceType('shown')} /> Show price</label><label><input type="radio" checked={priceType === 'discussion'} onChange={() => setPriceType('discussion')} /> Price on discussion</label></div>{priceType === 'shown' && <Field label="Your price"><div className="price-input"><span>Rs.</span><input value={price} type="number" onChange={(event) => setPrice(event.target.value)} /><b>/ KG</b></div></Field>}<Field label="Minimum order quantity" optional><input placeholder="50 KG" /></Field><div className="market-reference"><div><p>Today’s Kalimati average</p><h3>🍅 Tomato <strong>Rs. 68/KG</strong></h3></div><span className={Number(price) <= 68 ? 'competitive' : 'above'}>{Number(price) <= 68 ? '● Competitive price' : '● Above market average'}</span></div></section>}
+    {step === 3 && <section className="post-form-step"><h2>Harvest information</h2><div className="form-grid"><Field label="Harvest date"><input type="date" /></Field><Field label="Available until"><input type="date" /></Field><Field label="Availability status"><Select><option>🟢 Available</option><option>🟡 Limited Stock</option><option>🔴 Sold Out</option><option>🌱 Harvest in 3 Days</option><option>🌾 Coming Soon</option></Select></Field></div></section>}
+    {step === 4 && <section className="post-form-step"><h2>Product details</h2><Field label="Organic?"><div className="choice-row"><label><input type="radio" name="organic" /> Organic</label><label><input type="radio" name="organic" /> Conventional</label></div></Field><Field label="Freshness"><Select><option>Freshly Harvested Today</option><option>Harvested Yesterday</option><option>Within 3 Days</option></Select></Field><Field label="Description"><textarea rows="5" defaultValue={'Fresh tomatoes harvested this morning.\n\nSuitable for wholesale purchase.\n\nChemical-free farming practices.\nImmediate pickup available.'} /></Field></section>}
+    {step === 5 && <section className="post-form-step"><h2>Add product images</h2><p>Upload one cover image and up to four more product images.</p><div className="upload-grid"><label>＋<b>Cover image</b><input type="file" accept="image/*" /></label><label>＋<b>Product images</b><small>Up to 4 images</small><input type="file" accept="image/*" multiple /></label></div></section>}
+    {step === 6 && <section className="post-form-step"><h2>Delivery</h2><Field label="Delivery method"><div className="choice-row stacked"><label><input type="radio" name="delivery" /> Farmer Delivery</label><label><input type="radio" name="delivery" /> Buyer Pickup</label><label><input type="radio" name="delivery" /> Negotiable</label></div></Field></section>}
+    {step === 7 && <section className="post-form-step"><h2>Location</h2><div className="form-grid"><Field label="Province"><input /></Field><Field label="District"><input /></Field><Field label="Municipality" optional><input /></Field></div><button type="button" className="map-button">📍 Pin location on map</button></section>}
+    {step === 8 && <section className="post-form-step"><h2>Contact preference</h2><div className="choice-row stacked"><label><input type="radio" name="contact" /> Phone</label><label><input type="radio" name="contact" /> Chat only</label><label><input type="radio" name="contact" /> Both</label></div></section>}
+    <PostActions step={step} total={farmerSteps.length} prev={prev} next={next} publish={publish} publishText="Publish listing" />
+  </PostFrame>
+}
+
+const BrokerForm = () => {
+  const [step, setStep] = useState(1); const [negotiable, setNegotiable] = useState(false); const next = () => setStep((value) => Math.min(value + 1, brokerSteps.length)); const prev = () => setStep((value) => Math.max(value - 1, 1))
+  return <PostFrame title="Create a buying requirement" subtitle="Tell farmers exactly what you need and when you need it." steps={brokerSteps} step={step}>
+    {step === 1 && <section className="post-form-step"><h2>What do you need?</h2><div className="form-grid"><Field label="Product needed"><input placeholder="🍅 Tomato" /></Field><Field label="Quantity needed"><input placeholder="500 KG" /></Field><Field label="Preferred quality / variety" optional><input placeholder="Fresh, wholesale grade..." /></Field></div><Field label="Description"><textarea rows="5" defaultValue="Looking for fresh tomatoes for wholesale purchase. Need immediate delivery." /></Field></section>}
+    {step === 2 && <section className="post-form-step"><h2>Budget</h2><div className="price-choice"><label><input type="radio" checked={!negotiable} onChange={() => setNegotiable(false)} /> Set maximum budget</label><label><input type="radio" checked={negotiable} onChange={() => setNegotiable(true)} /> Price negotiable</label></div>{!negotiable && <Field label="Maximum budget"><div className="price-input"><span>Rs.</span><input type="number" placeholder="60" /><b>/ KG</b></div></Field>}<div className="market-reference"><div><p>Today’s Kalimati average</p><h3>🍅 Tomato <strong>Rs. 68/KG</strong></h3></div><span className="competitive">● Market reference</span></div></section>}
+    {step === 3 && <section className="post-form-step"><h2>Delivery requirement</h2><div className="form-grid"><Field label="Delivery needed by"><input type="date" /></Field><Field label="Delivery method"><Select><option>Pickup</option><option>Farmer Delivery</option><option>Either</option></Select></Field></div></section>}
+    {step === 4 && <section className="post-form-step"><h2>Preferred location</h2><div className="form-grid"><Field label="Province"><input /></Field><Field label="District"><input placeholder="Kathmandu" /></Field><Field label="Municipality" optional><input /></Field></div></section>}
+    {step === 5 && <section className="post-form-step"><h2>Contact preference</h2><div className="choice-row stacked"><label><input type="radio" name="contact" /> Phone</label><label><input type="radio" name="contact" /> Chat only</label><label><input type="radio" name="contact" /> Both</label></div></section>}
+    <PostActions step={step} total={brokerSteps.length} prev={prev} next={next} publish={() => { window.location.hash = '#dashboard' }} publishText="Publish requirement" />
+  </PostFrame>
+}
+
+const PostFrame = ({ title, subtitle, steps, step, children }) => <><Navbar /><main className="create-post-page"><div className="create-post-heading"><a href="#marketplace">← Marketplace</a><p className="kicker">CREATE POST</p><h1>{title}</h1><p>{subtitle}</p></div><div className="create-layout"><aside className="post-step-list">{steps.map((item, index) => <div className={step === index + 1 ? 'current' : step > index + 1 ? 'done' : ''} key={item}><b>{step > index + 1 ? '✓' : index + 1}</b><span>{item}</span></div>)}</aside><div className="post-form-card">{children}</div></div></main></>
+const PostActions = ({ step, total, prev, next, publish, publishText }) => <div className="post-form-actions">{step > 1 && <button className="button button-outline" type="button" onClick={prev}>Previous</button>} {step < total ? <button className="button" type="button" onClick={next}>Next →</button> : <button className="button" type="button" onClick={publish}>{publishText} →</button>}</div>
+
+const CreatePost = () => {
+  const { user } = useAuth()
+  if (!user) return <><Navbar /><main className="workspace"><p className="kicker">SIGN IN REQUIRED</p><h1>Ready to create a post?</h1><p>Log in or create an account first, then you can publish harvest listings or buying requirements.</p><a className="button" href="#login">Go to login</a></main></>
+  return user.role === 'broker' ? <BrokerForm /> : <FarmerForm />
+}
+
+export default CreatePost
