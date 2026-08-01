@@ -4,6 +4,8 @@ import Home from './pages/Home/Home'
 import Login from './pages/Login/Login'
 import SignIn from './pages/Login/SignIn'
 import Marketplace from './pages/Marketplace/Marketplace'
+import MarketPrice from './pages/MarketPrice/MarketPrice'
+
 import Workspace from './pages/Workspace/Workspace'
 import './App.css'
 
@@ -16,6 +18,7 @@ const AppContent = () => {
   if (route.startsWith('signup')) return <Login initialRole={route.split('/')[1]} />
   if (route === 'home') return <Home />
   if (route === 'marketplace') return <Marketplace />
+  if (route === 'market-price') return <MarketPrice />
   return <Workspace route={route} />
 }
 
