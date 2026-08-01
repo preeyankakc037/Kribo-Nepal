@@ -102,7 +102,6 @@ Our long-term vision is to provide farmers with data-driven insights instead of 
 
 ---
 
-# 🛠️ Tech Stack
 
 # 🛠️ Tech Stack
 

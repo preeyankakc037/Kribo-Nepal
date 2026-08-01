@@ -11,9 +11,9 @@ const Marketplace = () => {
   const [query, setQuery] = useState('')
   const visiblePosts = posts.filter((post) => (filter === 'all' || post.type === filter) && `${post.author} ${post.location} ${post.crop}`.toLowerCase().includes(query.toLowerCase()))
   return <><Navbar /><main className="marketplace-page">
-    <div className="marketplace-title"><div><p className="kicker">KRIBO MARKETPLACE</p><h1>Find the right deal.</h1><p>Explore fresh harvests and buying requirements from across Nepal.</p></div><a className="button" href="#dashboard">+ Create Post</a></div>
+    <div className="marketplace-title"><div><p className="kicker">KRIBO MARKETPLACE</p><h1>Find the right deal.</h1><p>Explore fresh harvests and buying requirements from across Nepal.</p></div><a className="button" href="#create-post">+ Create Post</a></div>
     <section className="market-search" aria-label="Marketplace filters"><label className="market-search-input">⌕<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search crops, farmers, brokers, districts..." /></label><div className="market-filters"><span>Show:</span>{[['all', 'All Posts'], ['selling', '🌾 Selling'], ['buying', '🛒 Buying']].map(([value, label]) => <button className={filter === value ? 'selected' : ''} onClick={() => setFilter(value)} key={value}>{label}</button>)}<button className="filter-more">⚙ More filters</button></div></section>
-    <section className="create-card"><div className="create-mark">+</div><div><h2>What would you like to post today?</h2><p>List your harvest or tell farmers what your business needs.</p></div><a className="button button-outline" href="#dashboard">+ Create Post</a></section>
+    <section className="create-card"><div className="create-mark">+</div><div><h2>What would you like to post today?</h2><p>List your harvest or tell farmers what your business needs.</p></div><a className="button button-outline" href="#create-post">+ Create Post</a></section>
     <div className="post-count">{visiblePosts.length} {visiblePosts.length === 1 ? 'opportunity' : 'opportunities'} to explore</div>
     <section className="post-feed">{visiblePosts.map((post) => <article className="market-post" key={post.id}>
       <div className={`status-badge ${post.type}`}>{post.type === 'selling' ? '● SELLING' : '● BUYING'}</div>
