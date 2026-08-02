@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   AreaChart,
   Area,
@@ -14,23 +14,16 @@ import {
 } from 'recharts'
 import Navbar from '../../components/common/Navbar'
 
-// ── Monthly price trend data for crops ───────────────────────────────────────
-const months = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
-
-const trendByCrop = {
-  Tomato: [48, 51, 49, 54, 57, 62],
-  Cauliflower: [42, 40, 41, 45, 47, 44],
-  Potato: [28, 29, 31, 32, 33, 35],
-  Onion: [62, 65, 64, 69, 72, 74],
-}
-
-const trendData = months.map((month, i) => ({
-  month,
-  Tomato: trendByCrop.Tomato[i],
-  Cauliflower: trendByCrop.Cauliflower[i],
-  Potato: trendByCrop.Potato[i],
-  Onion: trendByCrop.Onion[i],
-}))
+// ── Static fallback (used if week fetch fails) ───────────────────────────────
+const FALLBACK_TREND = [
+  { day: 'Mon', Tomato: 48, Cauliflower: 42, Potato: 28, Onion: 62 },
+  { day: 'Tue', Tomato: 51, Cauliflower: 40, Potato: 29, Onion: 65 },
+  { day: 'Wed', Tomato: 49, Cauliflower: 41, Potato: 31, Onion: 64 },
+  { day: 'Thu', Tomato: 54, Cauliflower: 45, Potato: 32, Onion: 69 },
+  { day: 'Fri', Tomato: 57, Cauliflower: 47, Potato: 33, Onion: 72 },
+  { day: 'Sat', Tomato: 62, Cauliflower: 44, Potato: 35, Onion: 74 },
+  { day: 'Sun', Tomato: 60, Cauliflower: 43, Potato: 34, Onion: 73 },
+]
 
 // ── District-wise rates data for bar chart ───────────────────────────────────
 const districtData = [
@@ -85,10 +78,135 @@ const todayRates = [
 const MarketPrice = () => {
   const [selectedCrop, setSelectedCrop] = useState('Tomato')
   const [searchQuery, setSearchQuery] = useState('')
+  const [liveRates, setLiveRates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [weeklyTrend, setWeeklyTrend] = useState(FALLBACK_TREND)
+  const [weeklyLoading, setWeeklyLoading] = useState(true)
+  const [weeklyRaw, setWeeklyRaw] = useState([])
+  const [weeklySelectedCrop, setWeeklySelectedCrop] = useState('Tomato Big(Nepali)')
+  const [weeklyDropdownSearch, setWeeklyDropdownSearch] = useState('')
+  const [weeklyDropdownOpen, setWeeklyDropdownOpen] = useState(false)
+
+  // Single consolidated fetch: prices-week?days=2 → today's table with real change vs yesterday
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/kalimati/prices-week?lang=en&days=2')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch prices')
+        return res.json()
+      })
+      .then(data => {
+        if (data && data.results && data.results.length > 0) {
+          // Sort by date ascending so results[0] = older, results[-1] = newest
+          const sorted = [...data.results].sort((a, b) => a.date.localeCompare(b.date))
+          const todayItems = (sorted[sorted.length - 1]?.items) || []
+          const yesterdayItems = (sorted.length >= 2 ? sorted[sorted.length - 2]?.items : []) || []
+
+          // Build a map of yesterday's prices by commodity name for fast lookup
+          const yesterdayMap = {}
+          yesterdayItems.forEach(item => {
+            yesterdayMap[item.commodity] = item.avg_price
+          })
+
+          const mappedRates = todayItems.map(item => {
+            const todayPrice = item.avg_price
+            const yestPrice = yesterdayMap[item.commodity]
+            let change = 'N/A'
+            let type = 'neutral'
+            if (yestPrice && yestPrice !== 0) {
+              const pct = ((todayPrice - yestPrice) / yestPrice) * 100
+              const sign = pct > 0 ? '+' : ''
+              change = `${sign}${pct.toFixed(1)}%`
+              type = pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral'
+            }
+            return {
+              crop: item.commodity,
+              today: todayPrice,
+              change,
+              type,
+              high: item.max_price,
+              low: item.min_price,
+              unit: item.unit
+            }
+          })
+          setLiveRates(mappedRates)
+        }
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setError(err.message)
+        setLoading(false)
+      })
+  }, [])
+
+  // Fetch 7-day weekly trend for charts
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/kalimati/prices-week?lang=en&days=7')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch weekly prices')
+        return res.json()
+      })
+      .then(data => {
+        if (data && data.results && data.results.length > 0) {
+          const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+          // Store raw per-day items for the dropdown-driven chart
+          const rawMapped = data.results.map(dayData => {
+            const raw = dayData.date || ''
+            const [, m, d] = raw.split('-')
+            const label = m && d ? `${monthNames[parseInt(m)]} ${d}` : raw
+            return { day: label, items: dayData.items || [] }
+          })
+          setWeeklyRaw(rawMapped)
+
+          // 4-crop simplified trend for the "All crops compared" line chart
+          const mapped = rawMapped.map(dayData => {
+            const items = dayData.items || []
+            const getPrice = (kw) => {
+              const hit = items.find(it => it.commodity && it.commodity.toLowerCase().includes(kw))
+              return hit ? hit.avg_price : null
+            }
+            return {
+              day: dayData.day,
+              Tomato: getPrice('tomato') || null,
+              Cauliflower: getPrice('cauli') || null,
+              Potato: getPrice('potato') || null,
+              Onion: getPrice('onion') || null,
+            }
+          }).filter(d => d.Tomato || d.Cauliflower || d.Potato || d.Onion)
+          if (mapped.length > 0) setWeeklyTrend(mapped)
+        }
+        setWeeklyLoading(false)
+      })
+      .catch(err => {
+        console.error('Weekly trend fetch failed:', err)
+        setWeeklyLoading(false)
+      })
+  }, [])
 
   const cropList = ['Tomato', 'Cauliflower', 'Potato', 'Onion']
 
-  const filteredRates = todayRates.filter((r) =>
+  // Derive full crop list from raw weekly data (all unique commodity names)
+  const cropDropdownList = weeklyRaw.length > 0
+    ? [...new Set(weeklyRaw.flatMap(d => d.items.map(it => it.commodity)))].sort()
+    : liveRates.map(r => r.crop)
+
+  // Build chart data for the selected crop from raw weekly data
+  const weeklyChartData = weeklyRaw.length > 0
+    ? weeklyRaw.map(dayData => {
+        const hit = dayData.items.find(it => it.commodity === weeklySelectedCrop)
+        return { day: dayData.day, price: hit ? hit.avg_price : null }
+      })
+    : FALLBACK_TREND.map(d => ({ day: d.day, price: d.Tomato }))
+
+  const filteredDropdownCrops = cropDropdownList.filter(c =>
+    c.toLowerCase().includes(weeklyDropdownSearch.toLowerCase())
+  )
+
+  const displayRates = liveRates.length > 0 ? liveRates : todayRates
+
+  const filteredRates = displayRates.filter((r) =>
     r.crop.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -128,26 +246,68 @@ const MarketPrice = () => {
           ))}
         </div>
 
-        {/* 6-Month Price Trend Card */}
+        {/* 7-Day Price Trend Card */}
         <div className="mp-card mp-trend-card">
           <div className="mp-card-header">
-            <h2>6-month price trend (Rs/kg)</h2>
-            <div className="mp-crop-tabs">
-              {cropList.map((crop) => (
-                <button
-                  key={crop}
-                  className={`mp-tab-btn ${selectedCrop === crop ? 'active' : ''}`}
-                  onClick={() => setSelectedCrop(crop)}
-                >
-                  {crop}
-                </button>
-              ))}
+            <h2>{weeklyLoading ? 'Loading 7-day trend...' : '7-day price trend (Rs/kg — Kalimati)'}</h2>
+            {/* Searchable Dropdown */}
+            <div 
+              className="mp-crop-dropdown" 
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setWeeklyDropdownOpen(false)
+                }
+              }}
+            >
+              <button
+                className="mp-dropdown-trigger"
+                onClick={() => setWeeklyDropdownOpen(o => !o)}
+              >
+                <span>{weeklySelectedCrop}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              {weeklyDropdownOpen && (
+                <div className="mp-dropdown-panel">
+                  <div className="mp-dropdown-search-wrap">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input
+                      autoFocus
+                      placeholder="Search crop..."
+                      value={weeklyDropdownSearch}
+                      onChange={e => setWeeklyDropdownSearch(e.target.value)}
+                      className="mp-dropdown-search-input"
+                    />
+                  </div>
+                  <ul className="mp-dropdown-list-panel">
+                    {filteredDropdownCrops.length === 0 && (
+                      <li className="mp-dropdown-empty">No results</li>
+                    )}
+                    {filteredDropdownCrops.map(crop => (
+                      <li
+                        key={crop}
+                        className={`mp-dropdown-item ${weeklySelectedCrop === crop ? 'active' : ''}`}
+                        onMouseDown={() => {
+                          setWeeklySelectedCrop(crop)
+                          setWeeklyDropdownSearch('')
+                          setWeeklyDropdownOpen(false)
+                        }}
+                      >
+                        {crop}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mp-chart-container">
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={weeklyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#43a047" stopOpacity={0.3} />
@@ -155,18 +315,19 @@ const MarketPrice = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f0" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
-                <YAxis domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                <YAxis domain={['auto', 'auto']} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }}
-                  formatter={(val) => [`Rs ${val}/kg`, selectedCrop]}
+                  formatter={(val) => val != null ? [`Rs ${val}/kg`, weeklySelectedCrop] : ['No data', weeklySelectedCrop]}
                 />
                 <Area
                   type="monotone"
-                  dataKey={selectedCrop}
+                  dataKey="price"
                   stroke="#2e7d32"
                   strokeWidth={2.5}
                   fill="url(#greenGradient)"
+                  connectNulls
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -182,14 +343,15 @@ const MarketPrice = () => {
             </div>
             <div className="mp-chart-container">
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <LineChart data={weeklyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f0" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
-                  <YAxis domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
+                  <YAxis domain={['auto', 'auto']} axisLine={false} tickLine={false} tick={{ fill: '#788c7d', fontSize: 11 }} />
                   <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }} />
-                  <Line type="monotone" dataKey="Tomato" stroke="#00897b" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Cauliflower" stroke="#2e7d32" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Potato" stroke="#fb8c00" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Tomato" stroke="#00897b" strokeWidth={2} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="Cauliflower" stroke="#2e7d32" strokeWidth={2} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="Potato" stroke="#fb8c00" strokeWidth={2} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="Onion" stroke="#e53935" strokeWidth={2} dot={false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -240,9 +402,23 @@ const MarketPrice = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRates.map((row) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={5} className="mp-no-results">
+                      Loading live Kalimati prices...
+                    </td>
+                  </tr>
+                )}
+                {error && !loading && (
+                  <tr>
+                    <td colSpan={5} className="mp-no-results" style={{ color: 'red' }}>
+                      {error}. Showing cached estimates.
+                    </td>
+                  </tr>
+                )}
+                {!loading && filteredRates.map((row) => (
                   <tr key={row.crop}>
-                    <td className="mp-crop-name">{row.crop}</td>
+                    <td className="mp-crop-name">{row.crop} {row.unit && <small>({row.unit})</small>}</td>
                     <td>
                       <span className="mp-price-tag">Rs {row.today}</span>
                     </td>

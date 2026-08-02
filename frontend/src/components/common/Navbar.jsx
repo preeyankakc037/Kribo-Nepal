@@ -52,7 +52,11 @@ const Navbar = () => {
           <>
             <a href="#profile" className={`profile-link ${route === 'profile' ? 'active' : ''}`}>
               <span className="profile-button" title={`Signed in as ${user.full_name || user.name}`}>
-                {(user.full_name || user.name || 'K').slice(0, 1).toUpperCase()}
+                {user.profile_photo ? (
+                  <img src={user.profile_photo} alt={`${user.full_name || 'User'} profile`} />
+                ) : (
+                  (user.full_name || user.name || 'K').slice(0, 1).toUpperCase()
+                )}
               </span>
             </a>
             <button className="logout-button" onClick={logout}>Logout</button>

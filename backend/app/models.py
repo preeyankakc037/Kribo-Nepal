@@ -10,6 +10,7 @@ class MarketplacePost(Base):
     __tablename__ = "marketplace_posts"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     user_role = Column(String)            # "farmer" or "broker"
     full_name = Column(String)
     product_name = Column(String)
@@ -23,9 +24,12 @@ class MarketplacePost(Base):
     organic = Column(Boolean, default=False)
     district = Column(String, nullable=True)
     municipality = Column(String, nullable=True)
+    latitude = Column(String, nullable=True)
+    longitude = Column(String, nullable=True)
     delivery_method = Column(String, nullable=True)
     description = Column(String, nullable=True)
     image = Column(String, nullable=True)
+    profile_photo = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -43,11 +47,13 @@ class User(Base):
     email = Column(String(200), unique=True, nullable=True, index=True)
     address = Column(String(500), nullable=True)
     location = Column(String(300), nullable=True)
-    role = Column(Enum(UserRole), nullable=False)
+    role = Column(Enum(UserRole), nullable=False, index=True)
     hashed_password = Column(String(500), nullable=False)
     is_verified = Column(Boolean, default=False)
     profile_photo = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    description = Column(String(1000), nullable=True)
+    years_experience = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     farmer_profile = relationship("FarmerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     broker_profile = relationship("BrokerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")

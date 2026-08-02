@@ -3,25 +3,89 @@ import Navbar from '../../components/common/Navbar'
 import { useAuth } from '../../hooks/useAuth'
 import { directoryApi } from '../../services/api'
 
-const Avatar = ({ person }) => {
+const Avatar = ({ person, className = 'person-avatar' }) => {
   const name = person.full_name || person.name || 'K'
-  return person.profile_photo
-    ? <img className="person-avatar" src={person.profile_photo} alt={`${name}'s profile`} />
-    : <div className="person-avatar">{name.slice(0, 1).toUpperCase()}</div>
+  
+  let imgSrc = null
+  if (person.profile_photo) {
+    imgSrc = person.profile_photo
+  } else if (person.has_photo && person.id) {
+    imgSrc = `http://127.0.0.1:8000/api/users/${person.id}/photo`
+  }
+
+  return imgSrc
+    ? <img className={className} src={imgSrc} alt={`${name}'s profile`} />
+    : <div className={className}>{name.slice(0, 1).toUpperCase()}</div>
 }
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth()
   const [editing, setEditing] = useState(false)
+  const [profilePhoto, setProfilePhoto] = useState(user?.profile_photo || '')
+  const [location, setLocation] = useState(user?.location || '')
+  const [description, setDescription] = useState(user?.description || '')
+  const [yearsExperience, setYearsExperience] = useState(user?.years_experience || '')
+  const [locating, setLocating] = useState(false)
+
   if (!user) return <><Navbar /><main className="workspace"><p className="kicker">SIGN IN REQUIRED</p><h1>Sign in to view your profile</h1><a className="button" href="#login">Go to login</a></main></>
+
   const role = user.role === 'broker' ? 'Broker' : 'Farmer'
-  const save = (event) => {
+
+  const readProfilePhoto = (file) => {
+    if (!file) return setProfilePhoto('')
+    const reader = new FileReader()
+    reader.onload = () => setProfilePhoto(reader.result)
+    reader.readAsDataURL(file)
+  }
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocation('Location access unavailable')
+      return
+    }
+
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude.toFixed(4)
+        const lng = position.coords.longitude.toFixed(4)
+        setLocation(`Lat ${lat}, Lng ${lng}`)
+        setLocating(false)
+      },
+      () => {
+        setLocation('Current location unavailable')
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
+  const save = async (event) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
-    updateUser(Object.fromEntries(data.entries()))
-    setEditing(false)
+    const payload = Object.fromEntries(data.entries())
+
+    try {
+      const updatedUser = await updateUser({
+        full_name: payload.full_name || user.full_name,
+        mobile: payload.mobile || user.mobile,
+        email: payload.email || user.email,
+        address: payload.address || user.address,
+        location: location || payload.location || user.location,
+        profile_photo: profilePhoto || user.profile_photo || '',
+        description: description || payload.description || user.description || '',
+        years_experience: Number(payload.years_experience || yearsExperience || 0) || null,
+      })
+
+      if (updatedUser) {
+        setEditing(false)
+      }
+    } catch {
+      setEditing(false)
+    }
   }
-  return <><Navbar /><main className="workspace"><p className="kicker">MY ACCOUNT</p><h1>Your profile</h1><section className="profile-card">{editing ? <form onSubmit={save}><div className="form-grid">{[['full_name', 'Full name'], ['mobile', 'Mobile number'], ['email', 'Email'], ['address', 'Address'], ['location', role === 'Broker' ? 'Trading location' : 'Farm location']].map(([key, label]) => <label className="form-field" key={key}><span>{label}</span><input name={key} defaultValue={user[key] || ''} /></label>)}</div><div className="form-actions"><button className="button button-outline" type="button" onClick={() => setEditing(false)}>Cancel</button><button className="button">Save changes</button></div></form> : <><div className="profile-heading"><Avatar person={user} /><div><h2>{user.full_name}</h2><p>{role} account {user.is_verified && <b className="verified-label">✓ Verified</b>}</p></div><button className="button button-outline edit-button" onClick={() => setEditing(true)}>Edit profile</button></div><dl className="profile-details"><div><dt>Mobile number</dt><dd>{user.mobile || 'Not added'}</dd></div><div><dt>Email</dt><dd>{user.email || 'Not added'}</dd></div><div><dt>Address</dt><dd>{user.address || 'Not added'}</dd></div><div><dt>Location</dt><dd>{user.location || 'Not added'}</dd></div></dl></>}</section></main></>
+
+  return <><Navbar /><main className="workspace"><p className="kicker">MY ACCOUNT</p><h1>Your profile</h1><section className="profile-card">{editing ? <form onSubmit={save}><div className="profile-edit-layout"><div className="profile-photo-editor"><Avatar person={{ ...user, profile_photo: profilePhoto || user.profile_photo }} className="profile-avatar-large" /><label className="upload-button"><input type="file" accept="image/*" onChange={(e) => readProfilePhoto(e.target.files[0])} />Upload picture</label></div><div className="form-grid form-grid-2">{[['full_name', 'Full name'], ['mobile', 'Mobile number'], ['email', 'Email'], ['address', 'Address']].map(([key, label]) => <label className="form-field" key={key}><span>{label}</span><input name={key} defaultValue={user[key] || ''} /></label>)}<label className="form-field form-field-location"><span>Current location</span><div className="location-input-row"><input name="location" value={location} onChange={(e) => setLocation(e.target.value)} /><button className="button button-outline button-small" type="button" onClick={useCurrentLocation}>{locating ? 'Getting...' : 'Use live location'}</button></div></label><label className="form-field"><span>Farmer description</span><textarea name="description" rows="3" value={description} onChange={(e) => setDescription(e.target.value)} /></label>{role === 'Farmer' && <label className="form-field"><span>Years of experience</span><input name="years_experience" type="number" min="0" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} /></label>}</div></div><div className="form-actions"><button className="button button-outline" type="button" onClick={() => setEditing(false)}>Cancel</button><button className="button">Save changes</button></div></form> : <><div className="profile-heading"><Avatar person={user} className="profile-avatar" /><div><h2>{user.full_name}</h2><p>{role} account {user.is_verified && <b className="verified-label">✓ Verified</b>}</p></div><button className="button button-outline edit-button" onClick={() => setEditing(true)}>Edit profile</button></div><dl className="profile-details"><div><dt>Mobile number</dt><dd>{user.mobile || 'Not added'}</dd></div><div><dt>Email</dt><dd>{user.email || 'Not added'}</dd></div><div><dt>Address</dt><dd>{user.address || 'Not added'}</dd></div><div><dt>Current location</dt><dd>{user.location || 'Not added'}</dd></div>{user.description && <div className="profile-details-full"><dt>Description</dt><dd>{user.description}</dd></div>}{user.years_experience && <div><dt>Years of experience</dt><dd>{user.years_experience}</dd></div>}</dl></>}</section></main></>
 }
 
 const KriboConnect = () => {

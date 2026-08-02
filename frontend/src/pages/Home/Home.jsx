@@ -1,6 +1,41 @@
+import { useEffect } from 'react'
 import Footer from '../../components/common/Footer'
 import Navbar from '../../components/common/Navbar'
 import heroImage from '../../assets/images/home_page.png'
+
+const logLayout = (runId = 'pre-fix') => {
+  const sections = [
+    { name: 'benefits', heading: document.querySelector('.benefits-section .section-heading'), grid: document.querySelector('.benefits-section .feature-grid') },
+    { name: 'how', heading: document.querySelector('.how-section .section-heading'), grid: document.querySelector('.how-section .steps-grid') },
+  ]
+  const brand = document.querySelector('.brand')
+  const payload = { runId, viewportWidth: window.innerWidth, sections: [], brandLeft: brand?.getBoundingClientRect().left ?? null }
+
+  sections.forEach(({ name, heading, grid }) => {
+    if (!heading || !grid) return
+    const hStyle = getComputedStyle(heading)
+    const kicker = heading.querySelector('.kicker')
+    const kStyle = kicker ? getComputedStyle(kicker) : null
+    const hRect = heading.getBoundingClientRect()
+    const gRect = grid.getBoundingClientRect()
+    payload.sections.push({
+      name,
+      headingLeft: Math.round(hRect.left),
+      gridLeft: Math.round(gRect.left),
+      leftDelta: Math.round(hRect.left - gRect.left),
+      headingWidth: Math.round(hRect.width),
+      gridWidth: Math.round(gRect.width),
+      headingMarginLeft: hStyle.marginLeft,
+      headingMarginRight: hStyle.marginRight,
+      headingMaxWidth: hStyle.maxWidth,
+      kickerLetterSpacing: kStyle?.letterSpacing ?? null,
+    })
+  })
+
+  // #region agent log
+  fetch('http://127.0.0.1:7889/ingest/44cb9ee7-2640-4066-9727-67d65045c84a', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '3e322b' }, body: JSON.stringify({ sessionId: '3e322b', runId, hypothesisId: 'A-E', location: 'Home.jsx:logLayout', message: 'home section alignment metrics', data: payload, timestamp: Date.now() }) }).catch(() => {})
+  // #endregion
+}
 
 const features = [
   ['✓', 'Verified people, real trade', 'Farmers and brokers can build trust with optional identity and business verification.'],
@@ -17,7 +52,15 @@ const steps = [
   ['03', 'Choose your price', 'Compare bids and choose the offer that works best for you.'],
 ]
 
-const Home = () => (
+const Home = () => {
+  useEffect(() => {
+    const measure = () => logLayout('pre-fix')
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+
+  return (
   <div id="home">
     <Navbar />
     <main>
@@ -58,6 +101,7 @@ const Home = () => (
     </main>
     <Footer />
   </div>
-)
+  )
+}
 
 export default Home

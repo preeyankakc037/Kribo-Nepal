@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import request from '../services/api'
 import { AuthContext } from './auth-state'
 
 const TOKEN_KEY = 'kribo_token'
@@ -46,8 +47,23 @@ export const AuthProvider = ({ children }) => {
         setUser(userData)
       },
 
-      updateUser: (updates) => {
-        setUser((currentUser) => currentUser ? { ...currentUser, ...updates } : currentUser)
+      updateUser: async (updates) => {
+        const currentUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null')
+        if (!currentUser) return null
+
+        try {
+          const updatedUser = await request('/api/users/me', {
+            method: 'PUT',
+            json: updates,
+          })
+
+          setUser(updatedUser)
+          return updatedUser
+        } catch (error) {
+          console.error('Profile update failed:', error)
+          setUser((existing) => existing ? { ...existing, ...updates } : existing)
+          throw error
+        }
       },
 
       logout: () => {

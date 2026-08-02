@@ -2,8 +2,52 @@ import { useState } from 'react'
 import Navbar from '../../components/common/Navbar'
 import { useAuth } from '../../hooks/useAuth'
 
+const LOCAL_MARKETPLACE_POSTS_KEY = 'kribo_marketplace_local_posts'
+const LOCAL_MARKETPLACE_IMAGES_KEY = 'kribo_marketplace_local_images'
+
 const farmerSteps = ['Product', 'Pricing', 'Harvest', 'Details', 'Location']
 const brokerSteps = ['Product need', 'Budget', 'Location']
+
+const readLocalMarketplacePosts = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_MARKETPLACE_POSTS_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+const writeLocalMarketplacePost = (post) => {
+  const stored = readLocalMarketplacePosts()
+  const nextPosts = [
+    {
+      ...post,
+      id: typeof post.id === 'number' ? post.id : Date.now(),
+      created_at: post.created_at || new Date().toISOString(),
+    },
+    ...stored,
+  ].slice(0, 50)
+
+  localStorage.setItem(LOCAL_MARKETPLACE_POSTS_KEY, JSON.stringify(nextPosts))
+}
+
+const readImageFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(reader.result)
+  reader.onerror = () => reject(new Error('Could not read image file.'))
+  reader.readAsDataURL(file)
+})
+
+const saveLocalMarketplaceImage = (postId, imageDataUrl) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem(LOCAL_MARKETPLACE_IMAGES_KEY) || '{}')
+    localStorage.setItem(
+      LOCAL_MARKETPLACE_IMAGES_KEY,
+      JSON.stringify({ ...existing, [postId]: imageDataUrl })
+    )
+  } catch {
+    // Ignore unavailable localStorage writes
+  }
+}
 
 const Field = ({ label, optional, children }) => (
   <label className="form-field">
@@ -22,6 +66,7 @@ const Select = ({ value, onChange, children }) => (
 const FarmerForm = ({ user }) => {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState('')
 
   // Form State
   const [productName, setProductName] = useState('')
@@ -43,6 +88,7 @@ const FarmerForm = ({ user }) => {
   const publish = async () => {
     setLoading(true)
     const payload = {
+      user_id: user?.id || null,
       user_role: 'farmer',
       full_name: user?.full_name || user?.name || 'Local Farmer',
       product_name: productName || 'Fresh Vegetables',
@@ -58,7 +104,8 @@ const FarmerForm = ({ user }) => {
       municipality: municipality || '',
       delivery_method: 'Farmer Delivery',
       description: description,
-      image: null
+      image: imagePreview || null,
+      profile_photo: user?.profile_photo || null
     }
 
     try {
@@ -68,6 +115,17 @@ const FarmerForm = ({ user }) => {
         body: JSON.stringify(payload)
       })
       if (!res.ok) throw new Error('Failed to create post')
+
+      const createdPost = await res.json().catch(() => null)
+      writeLocalMarketplacePost({
+        ...payload,
+        id: createdPost?.id || Date.now(),
+        created_at: createdPost?.created_at || new Date().toISOString(),
+      })
+      if (imagePreview) {
+        saveLocalMarketplaceImage(createdPost?.id || Date.now(), imagePreview)
+      }
+
       window.location.hash = '#marketplace'
     } catch (err) {
       console.error('API error publishing post:', err)
@@ -213,6 +271,29 @@ const FarmerForm = ({ user }) => {
               onChange={(e) => setDescription(e.target.value)}
             />
           </Field>
+          <Field label="Post photo" optional>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+
+                if (file.size > 1_500_000) {
+                  alert('Please select an image smaller than 1.5MB for faster local caching.')
+                  return
+                }
+
+                const dataUrl = await readImageFileAsDataUrl(file)
+                setImagePreview(dataUrl)
+              }}
+            />
+          </Field>
+          {imagePreview && (
+            <div className="image-preview-wrap">
+              <img src={imagePreview} alt="Selected marketplace post preview" className="image-preview" />
+            </div>
+          )}
         </section>
       )}
 
@@ -253,6 +334,7 @@ const FarmerForm = ({ user }) => {
 const BrokerForm = ({ user }) => {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState('')
 
   const [productName, setProductName] = useState('')
   const [quantity, setQuantity] = useState('2000')
@@ -266,6 +348,7 @@ const BrokerForm = ({ user }) => {
   const publish = async () => {
     setLoading(true)
     const payload = {
+      user_id: user?.id || null,
       user_role: 'broker',
       full_name: user?.full_name || user?.name || 'Commercial Broker',
       product_name: productName || 'Looking for Produce',
@@ -281,7 +364,8 @@ const BrokerForm = ({ user }) => {
       municipality: '',
       delivery_method: 'Pickup',
       description: description,
-      image: null
+      image: imagePreview || null,
+      profile_photo: user?.profile_photo || null
     }
 
     try {
@@ -291,6 +375,17 @@ const BrokerForm = ({ user }) => {
         body: JSON.stringify(payload)
       })
       if (!res.ok) throw new Error('Failed to create requirement')
+
+      const createdPost = await res.json().catch(() => null)
+      writeLocalMarketplacePost({
+        ...payload,
+        id: createdPost?.id || Date.now(),
+        created_at: createdPost?.created_at || new Date().toISOString(),
+      })
+      if (imagePreview) {
+        saveLocalMarketplaceImage(createdPost?.id || Date.now(), imagePreview)
+      }
+
       window.location.hash = '#marketplace'
     } catch (err) {
       console.error('API error creating post:', err)
@@ -333,6 +428,29 @@ const BrokerForm = ({ user }) => {
               onChange={(e) => setDescription(e.target.value)}
             />
           </Field>
+          <Field label="Post photo" optional>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+
+                if (file.size > 1_500_000) {
+                  alert('Please select an image smaller than 1.5MB for faster local caching.')
+                  return
+                }
+
+                const dataUrl = await readImageFileAsDataUrl(file)
+                setImagePreview(dataUrl)
+              }}
+            />
+          </Field>
+          {imagePreview && (
+            <div className="image-preview-wrap">
+              <img src={imagePreview} alt="Selected marketplace post preview" className="image-preview" />
+            </div>
+          )}
         </section>
       )}
 
